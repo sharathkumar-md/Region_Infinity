@@ -1,4 +1,6 @@
-# JEE Math Solver
+# Region Infinity
+
+## JEE Math Solver
 
 A comprehensive, unified package for solving JEE-level mathematics problems with AI reasoning and mathematical verification.
 
