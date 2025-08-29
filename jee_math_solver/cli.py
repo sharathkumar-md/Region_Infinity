@@ -38,10 +38,10 @@ def main() -> NoReturn:
     result = solve_question(question)
 
     if "error" in result:
-        print("❌ Error:", result["error"]) 
+        print(" Error:", result["error"]) 
         raw = result.get("raw")
         if raw:
-            print("\n📄 Raw output:")
+            print("\n Raw output:")
             print(raw)
         sys.exit(2)
 
