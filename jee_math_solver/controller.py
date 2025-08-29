@@ -13,6 +13,7 @@ from .llm_client import LLMClient, create_llm_client
 from .prompts import get_system_prompt, format_user_prompt
 
 
+
 def solve(problem: str, max_rounds: int = 3, structured: bool = False) -> Dict[str, Any]:
     """
     Unified solve function with LLM + CAS verification loop.
@@ -58,18 +59,22 @@ def solve(problem: str, max_rounds: int = 3, structured: bool = False) -> Dict[s
                 # Parse JSON response
                 parsed_response = json.loads(content)
                 
+                # Extract new fields with fallback values
+                parsed_response["simplified_question"] = parsed_response.get("simplified_question") or "(Not provided)"
+                parsed_response["simplified_explanation"] = parsed_response.get("simplified_explanation") or "(Not provided)"
+                parsed_response["simplified_solution"] = parsed_response.get("simplified_solution") or "(Not provided)"
+                parsed_response["easier_question"] = parsed_response.get("easier_question") or "(Not provided)"
+                
                 # Verify the answer if possible
                 final_answer = parsed_response.get("final_answer")
                 if final_answer:
                     verification = verify_mathematical_answer(final_answer, problem)
                     parsed_response["verification"] = verification
                     parsed_response["verification_round"] = round_num + 1
-                    
                     # If verification passed or we're on the last round, return
                     if verification["is_valid"] or round_num == max_rounds - 1:
                         parsed_response["method"] = "llm_with_verification"
                         return parsed_response
-                    
                     # If verification failed, ask LLM to correct
                     error_msg = verification.get("error", "Mathematical verification failed")
                     correction_prompt = f"""

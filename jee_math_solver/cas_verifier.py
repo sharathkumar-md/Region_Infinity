@@ -56,20 +56,74 @@ def _parse(expr: str) -> sp.Expr:
 
 def clean_expression(expr: str) -> str:
     """Clean and normalize mathematical expressions for SymPy parsing."""
-    # Remove common text patterns
-    expr = re.sub(r'\b(answer|is|equals?|=)\b', '', expr, flags=re.IGNORECASE)
+    original_expr = expr.strip()
     
-    # Replace common mathematical notation
-    replacements = {
+    # Handle function notation like "f'(x) = ..." - extract just the expression part
+    if "=" in original_expr and ("f'" in original_expr or "d/dx" in original_expr or "derivative" in original_expr.lower()):
+        parts = original_expr.split('=')
+        if len(parts) == 2:
+            expr = parts[1].strip()
+    
+    # Handle equation format like "x = 2" or "answer = 3" 
+    # Extract the right-hand side (the actual value/expression)
+    elif '=' in original_expr:
+        # Split on '=' and take the right side (the answer)
+        parts = original_expr.split('=')
+        if len(parts) == 2:
+            # Check if left side looks like a variable assignment (x =, y =, answer =, etc.)
+            left = parts[0].strip()
+            right = parts[1].strip()
+            
+            # Common patterns for variable assignment
+            var_patterns = [r'^[a-zA-Z]\s*$', r'^answer\s*$', r'^solution\s*$', r'^result\s*$']
+            
+            if any(re.match(pattern, left, re.IGNORECASE) for pattern in var_patterns):
+                # This looks like "x = value", so use the value part
+                expr = right
+            else:
+                # This might be an equation like "2x + 1 = 5", keep as is for now
+                expr = original_expr
+        else:
+            # Multiple = signs, remove common text patterns
+            expr = re.sub(r'\b(answer|is|equals?)\s*=\s*', '', expr, flags=re.IGNORECASE)
+    
+    # Replace Unicode mathematical symbols with ASCII equivalents
+    unicode_replacements = {
+        '²': '**2',
+        '³': '**3', 
+        '⁴': '**4',
+        '⁵': '**5',
+        '⁶': '**6',
+        '⁷': '**7',
+        '⁸': '**8',
+        '⁹': '**9',
+        '¹': '**1',
+        '⁰': '**0',
         '°': '*pi/180',  # degrees to radians
         '√': 'sqrt',
         '∞': 'oo',
         'π': 'pi',
         'ln': 'log',
+        '×': '*',
+        '·': '*',
+        '÷': '/',
     }
     
-    for old, new in replacements.items():
+    for old, new in unicode_replacements.items():
         expr = expr.replace(old, new)
+    
+    # Remove other common text patterns (but not = if it's part of an equation)
+    if '=' not in expr:
+        expr = re.sub(r'\b(answer|is|equals?)\b', '', expr, flags=re.IGNORECASE)
+    
+    # Replace common mathematical notation
+    replacements = {
+        'sin': 'sin',  # SymPy understands these
+        'cos': 'cos',
+        'tan': 'tan',
+        'exp': 'exp',
+        'log': 'log',
+    }
     
     # Clean whitespace and common prefixes
     expr = expr.strip()
@@ -163,6 +217,14 @@ def verify_mathematical_answer(expression: str, context: str = "") -> Dict[str, 
 
 def extract_numerical_answer(text: str) -> Optional[str]:
     """Extract numerical answers from text responses."""
+    # Handle case where text might be a number already
+    if isinstance(text, (int, float)):
+        return str(text)
+    
+    # Ensure we have a string
+    if not isinstance(text, str):
+        text = str(text)
+    
     # Look for common answer patterns
     patterns = [
         r'(?:answer|result|solution)\s*(?:is|=|:)\s*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)',

@@ -25,11 +25,16 @@ def main() -> NoReturn:
         print("  - Install dependencies: pip install -r requirements.txt")
         sys.exit(1)
 
-    question = sys.argv[1]
+    # Handle both --question flag and direct question
+    if sys.argv[1] == "--question" and len(sys.argv) >= 3:
+        question = sys.argv[2]
+    else:
+        question = sys.argv[1]
+        
     print(f"Solving: {question}")
     print("=" * 50)
     
-    # Get LLM response
+    # Get LLM response using the enhanced prompt method
     result = solve_question(question)
 
     if "error" in result:
@@ -40,7 +45,27 @@ def main() -> NoReturn:
             print(raw)
         sys.exit(2)
 
-    # Display structured results
+    # Display structured results with new workflow
+    print("\n" + "=" * 60)
+    print("STAGE 1: SIMPLIFIED VERSION (Practice Round)")
+    print("=" * 60)
+    
+    print("\n=== Simplified Question ===")
+    simplified_question = result.get("simplified_question", "(Not provided)")
+    print(simplified_question)
+    
+    print("\n=== Why This Helps (Simplified Explanation) ===")
+    simplified_explanation = result.get("simplified_explanation", "(Not provided)")
+    print(simplified_explanation)
+    
+    print("\n=== Simplified Solution ===")
+    simplified_solution = result.get("simplified_solution", "(Not provided)")
+    print(simplified_solution)
+    
+    print("\n" + "=" * 60)
+    print("STAGE 2: ORIGINAL QUESTION (Main Solution)")
+    print("=" * 60)
+    
     print("\n=== Final Answer ===")
     final_answer = result.get("final_answer", "<missing>")
     print(final_answer)
@@ -50,7 +75,7 @@ def main() -> NoReturn:
     verification = verify_mathematical_answer(final_answer, question)
     
     if verification["is_valid"]:
-        print("✓ Answer is mathematically valid")
+        print("[OK] Answer is mathematically valid")
         simplified = verification["simplified_answer"]
         if simplified and simplified != final_answer.strip():
             print(f"Simplified form: {simplified}")
@@ -80,7 +105,7 @@ def main() -> NoReturn:
             print(f"Extracted numerical value: {numerical}")
             num_verification = verify_mathematical_answer(numerical)
             if num_verification["is_valid"]:
-                print(f"✓ Numerical answer verified: {num_verification['simplified_answer']}")
+                print(f"[OK] Numerical answer verified: {num_verification['simplified_answer']}")
 
     print("\n=== Approach ===")
     approach = result.get("approach", "<missing>")
@@ -89,6 +114,14 @@ def main() -> NoReturn:
     print("\n=== Critical Thinking ===")
     critical_thinking = result.get("critical_thinking", "<missing>")
     print(critical_thinking)
+    
+    print("\n" + "=" * 60)
+    print("BONUS: EASIER PRACTICE QUESTION")
+    print("=" * 60)
+    
+    print("\n=== Easier Question for Practice ===")
+    easier_question = result.get("easier_question", "(Not provided)")
+    print(easier_question)
     
     # Show additional insights if verification provided them
     if verification.get("verification_details"):
